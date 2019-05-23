@@ -8,6 +8,7 @@ import platform
 import tempfile
 import urllib.request
 from urllib.error import URLError, HTTPError
+import subprocess
 
 def get_platform():
     os = {}
@@ -64,4 +65,14 @@ def get_ngrok():
         print(err)
         sys.exit(1)
 
-get_ngrok()
+def execute():
+    file = tempfile.gettempdir()+'/ngrok'
+    # verificar file
+    try:
+        p = subprocess.run([file, 'http'], capture_output=False)
+        print(p.returncode)
+    except Exception as err:
+        print(err)
+ 
+
+execute()
