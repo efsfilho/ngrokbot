@@ -2,6 +2,7 @@
 
 import os
 import sys
+import json
 import math
 import pathlib
 import zipfile
@@ -69,7 +70,7 @@ def get_ngrok():
         ngrok_exe_path = pathlib.Path(temp, filename)
 
         download = ngrok_exe_path.is_file()
-        download = False
+        # download = False
         if not download:
             download_file(url, ngrok_zip_path)
             print('Extracting ngrok: ', ngrok_zip_path)
@@ -87,12 +88,25 @@ def execute():
     filePath = get_ngrok()
     filePathStr = str(filePath)
     try:
-        token = '--authtoken='
-        p = subprocess.run([filePathStr, 'http', token], capture_output=False)
+        token = '--authtoken=asd'
+        p = subprocess.run([filePathStr, 'http', '80'], capture_output=False)
         print(p.returncode)
     except Exception as err:
         print(err)
 
-# execute()
+def getInfo(full=False):
+    try:
+        res = urllib.request.urlopen('http://127.0.0.1:4040/api/tunnels').read()
+        api = json.loads(res.decode('utf-8'))
+        if full:
+            return api['tunnels'][0]
+        else:
+            return api['tunnels'][0]['public_url']
+    except:
+        return 'Err'
+
+
+
+execute()
 
 print('end')
