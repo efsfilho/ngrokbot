@@ -2,13 +2,14 @@
 
 import os
 import sys
+import math
 import pathlib
 import zipfile
-import platform
 import tempfile
+import platform
+import subprocess
 import urllib.request
 from urllib.error import URLError, HTTPError
-import subprocess
 
 def get_platform():
     os = {}
@@ -25,10 +26,23 @@ def get_platform():
         raise ValueError('Platform not supported')
     return os
 
+def report_hook(blocknum, blocksize, totalsize):
+    read = blocknum * blocksize
+    if totalsize > 0:
+        percent = read * 1e2 / totalsize
+        readf = read/math.pow(1024, 2)
+        totalf = totalsize/math.pow(1024, 2)
+        sys.stderr.write(f"\r {percent:.0f}% {readf:.2f}Mb of {totalf:.2f}Mb")
+        if read >= totalsize:
+            # end
+            sys.stderr.write("\n")
+    else:
+        sys.stderr.write("read %d\n" % (read,))
+            
 def download_file(url, filename):
     try:
-        print('Downloading ngrok...', url)
-        urllib.request.urlretrieve(url, filename)
+        print('Downloading ngrok... ', url)
+        urllib.request.urlretrieve(url, filename, report_hook)
     except HTTPError as e:
         raise ValueError('An error has occurred while downloading ngrok:', e)
     except URLError as e:
@@ -54,25 +68,31 @@ def get_ngrok():
         ngrok_zip_path = pathlib.Path(temp, 'ngrok.zip')
         ngrok_exe_path = pathlib.Path(temp, filename)
 
-        download_file(url, ngrok_zip_path)
+        download = ngrok_exe_path.is_file()
+        download = False
+        if not download:
+            download_file(url, ngrok_zip_path)
+            print('Extracting ngrok: ', ngrok_zip_path)
+            zip_file = zipfile.ZipFile(ngrok_zip_path, 'r')
+            zip_file.extractall(temp)
+            zip_file.close()
+            os.chmod(ngrok_exe_path, 0o755)
 
-        zip_file = zipfile.ZipFile(ngrok_zip_path, 'r')
-        zip_file.extractall(temp)
-        zip_file.close()
-        os.chmod(ngrok_exe_path, 0o755)
-
+        return ngrok_exe_path        
     except ValueError as err:
         print(err)
         sys.exit(1)
 
-def execute():
-    file = tempfile.gettempdir()+'/ngrok'
-    # verificar file
+def execute():    
+    filePath = get_ngrok()
+    filePathStr = str(filePath)
     try:
-        p = subprocess.run([file, 'http'], capture_output=False)
+        token = '--authtoken='
+        p = subprocess.run([filePathStr, 'http', token], capture_output=False)
         print(p.returncode)
     except Exception as err:
         print(err)
- 
 
-execute()
+# execute()
+
+print('end')
