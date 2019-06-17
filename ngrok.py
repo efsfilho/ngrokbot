@@ -70,7 +70,7 @@ def get_ngrok():
         ngrok_exe_path = pathlib.Path(temp, filename)
 
         download = ngrok_exe_path.is_file()
-        # download = False
+
         if not download:
             download_file(url, ngrok_zip_path)
             print('Extracting ngrok: ', ngrok_zip_path)
@@ -89,8 +89,9 @@ def execute():
     filePathStr = str(filePath)
     try:
         token = '--authtoken=asd'
-        p = subprocess.run([filePathStr, 'http', '80'], capture_output=False)
-        print(p.returncode)
+        # p = subprocess.run([filePathStr, 'http', '80'], capture_output=False)
+        p = subprocess.Popen([filePathStr, 'http', '80'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # stdout, stderr = p.communicate()
     except Exception as err:
         print(err)
 
