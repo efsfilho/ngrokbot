@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import math
+import time
 import pathlib
 import zipfile
 import tempfile
@@ -79,18 +80,20 @@ def get_ngrok():
             zip_file.close()
             os.chmod(ngrok_exe_path, 0o755)
 
-        return ngrok_exe_path        
+        return ngrok_exe_path
     except ValueError as err:
         print(err)
         sys.exit(1)
 
-def execute():    
+ngrok_process = None
+def execute():
+    global ngrok_process
     filePath = get_ngrok()
     filePathStr = str(filePath)
     try:
         token = '--authtoken=asd'
         # p = subprocess.run([filePathStr, 'http', '80'], capture_output=False)
-        p = subprocess.Popen([filePathStr, 'http', '80'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ngrok_process = subprocess.Popen([filePathStr, 'http', '80'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # stdout, stderr = p.communicate()
     except Exception as err:
         print(err)
@@ -103,11 +106,18 @@ def getInfo(full=False):
             return api['tunnels'][0]
         else:
             return api['tunnels'][0]['public_url']
-    except:
-        return 'Err'
+    except HTTPError as e:
+        raise ValueError('An error has occurred while downloading ngrok:', e)
+    except URLError as e:
+        raise ValueError('An error has occurred while downloading ngrok:', e.reason)
 
 
 
 execute()
 
+info = getInfo()
+print(info)
+
+time.sleep(5.0)
+ngrok_process.kill()
 print('end')
