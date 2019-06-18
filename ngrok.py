@@ -13,6 +13,9 @@ import subprocess
 import urllib.request
 from urllib.error import URLError, HTTPError
 
+# stderr, stdout and pid of the running ngrok
+ngrok_process = None
+
 def get_platform():
     os = {}
     os['os'] = platform.system()
@@ -29,6 +32,9 @@ def get_platform():
     return os
 
 def report_hook(blocknum, blocksize, totalsize):
+    """
+    Write download progress
+    """
     read = blocknum * blocksize
     if totalsize > 0:
         percent = read * 1e2 / totalsize
@@ -51,6 +57,10 @@ def download_file(url, filename):
         raise ValueError('An error has occurred while downloading ngrok:', e.reason)
     
 def get_ngrok():
+    """
+    After download and extract ngrok
+    Returns ngrok executable path
+    """
     try:
         plat = get_platform()
         if plat['os'] == 'Windows':
@@ -85,39 +95,73 @@ def get_ngrok():
         print(err)
         sys.exit(1)
 
-ngrok_process = None
+def get_stdout():
+    global ngrok_process
+    msg = ''
+    if not is_running():
+        for line in ngrok_process.stdout:
+            msg += line.decode('utf-8')
+            # print('', line.decode('utf-8'))
+    return msg
+
+def is_running():
+    """
+    Returns ngrok process status
+    """
+    global ngrok_process
+    if ngrok_process is None:
+        return False
+    else:
+        if ngrok_process.poll() is None:
+            return True
+        else:
+            return False
+
 def execute():
     global ngrok_process
+
+    if is_running():
+        stop()
     filePath = get_ngrok()
     filePathStr = str(filePath)
     try:
         token = '--authtoken=asd'
-        # p = subprocess.run([filePathStr, 'http', '80'], capture_output=False)
-        ngrok_process = subprocess.Popen([filePathStr, 'http', '80'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # stdout, stderr = p.communicate()
-    except Exception as err:
+        args = [filePathStr, 'http', '3000']
+        ngrok_process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print('ngrok Running...', args)
+        # stdout, stderr = ngrok_process.communicate()
+    except ValueError as err:
         print(err)
 
-def getInfo(full=False):
+def stop():
+    global ngrok_process
+    if ngrok_process != None:
+        ngrok_process.terminate()
+        ngrok_process = None
+
+def get_info(full=False):
     try:
-        res = urllib.request.urlopen('http://127.0.0.1:4040/api/tunnels').read()
+        local_api = 'http://127.0.0.1:4040/api/tunnels'
+        res = urllib.request.urlopen(local_api).read()
         api = json.loads(res.decode('utf-8'))
         if full:
             return api['tunnels'][0]
         else:
             return api['tunnels'][0]['public_url']
     except HTTPError as e:
-        raise ValueError('An error has occurred while downloading ngrok:', e)
+        raise ValueError('An error has occurred while accessing ngrok local api: '+local_api, e)
     except URLError as e:
-        raise ValueError('An error has occurred while downloading ngrok:', e.reason)
-
-
+        raise ValueError('An error has occurred while accessing ngrok local api: '+local_api, e.reason)
 
 execute()
 
-info = getInfo()
-print(info)
+while True:
+    cmd = input()
+    if cmd == 'e':
+        stop()
+        break
+    if cmd == 'i': print(get_info())
+    if cmd == 'if': print(get_info(True))
+    if cmd == 'c': print(is_running())
+    if cmd == 's': print(get_stdout())
 
-time.sleep(5.0)
-ngrok_process.kill()
-print('end')
