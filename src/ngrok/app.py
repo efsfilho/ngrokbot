@@ -17,7 +17,10 @@ from urllib.error import URLError, HTTPError
 ngrok_process = None
 
 def get_platform():
-    os = {}
+    """
+    Returns OS/Architecture
+    """
+    os = dict(os='', arch='')
     os['os'] = platform.system()
 
     if platform.machine() in {'x86_64', 'AMD64'}:
@@ -28,29 +31,49 @@ def get_platform():
     print('Platform:', os['os'], os['arch'])
 
     if os['os'] != 'Linux' and os['os'] != 'Windows':
-        raise ValueError('Platform not supported')
+        raise ValueError('Platform not supported yet!')
     return os
 
-def report_hook(blocknum, blocksize, totalsize):
+def get_ngrok_url():
+    """
+    Returns ngrok url to be download according to the running platform
+    """
+    url = ''
+    plat = get_platform()
+    if plat['os'] == 'Linux':
+        if plat['arch'] == 64:
+            url = 'https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip'
+        else:
+            url = 'https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-386.zip'
+    else:
+        if plat['arch'] == 64:
+            url = 'https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip'
+        else:
+            url = 'https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-386.zip'
+        
+    return url
+
+def report_hook(block_num, block_size, total_size):
     """
     Write download progress
     """
-    read = blocknum * blocksize
-    if totalsize > 0:
-        percent = read * 1e2 / totalsize
+    read = block_num * block_size
+    if total_size > 0:
+        percent = read * 1e2 / total_size
         readf = read/math.pow(1024, 2)
-        totalf = totalsize/math.pow(1024, 2)
+        totalf = total_size/math.pow(1024, 2)
         sys.stderr.write(f"\r {percent:.0f}% {readf:.2f}Mb of {totalf:.2f}Mb")
-        if read >= totalsize:
+        if read >= total_size:
             # end
             sys.stderr.write("\n")
     else:
         sys.stderr.write("read %d\n" % (read,))
             
-def download_file(url, filename):
+def download_file(file_name):    
     try:
+        url = get_ngrok_url()
         print('Downloading ngrok... ', url)
-        urllib.request.urlretrieve(url, filename, report_hook)
+        urllib.request.urlretrieve(url, file_name, report_hook)
     except HTTPError as e:
         raise ValueError('An error has occurred while downloading ngrok:', e)
     except URLError as e:
@@ -58,39 +81,43 @@ def download_file(url, filename):
     
 def get_ngrok():
     """
-    After download and extract ngrok
-    Returns ngrok executable path
+    Returns ngrok executable path after download and extract ngrok to the temp directory
     """
+
+    if get_platform()['os'] == 'Linux':
+        file_name = 'ngrok'
+    else:
+        file_name = 'ngrok.exe'
+
+    temp = tempfile.gettempdir()
+    ngrok_path = pathlib.Path(temp, file_name)
+
     try:
-        plat = get_platform()
-        if plat['os'] == 'Windows':
-            filename = 'ngrok.exe'
-            if plat['arch'] == 64:
-                url = 'https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip'
-            else:
-                url = 'https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-386.zip'
+        # checks if ngrok was already downloaded
+        if ngrok_path.is_file():
+            return ngrok_path
         else:
-            filename = 'ngrok'
-            if plat['arch'] == 64:
-                url = 'https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip'
-            else:
-                url = 'https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-386.zip'
+            temp = tempfile.gettempdir()
+            ngrok_zip_path = pathlib.Path(temp, 'ngrok.zip')
 
-        temp = tempfile.gettempdir()
-        ngrok_zip_path = pathlib.Path(temp, 'ngrok.zip')
-        ngrok_exe_path = pathlib.Path(temp, filename)
+            # downloads ngrok zip
+            download_file(ngrok_zip_path)
 
-        download = ngrok_exe_path.is_file()
+            print('Extracting ngrok: ',ngrok_zip_path)
 
-        if not download:
-            download_file(url, ngrok_zip_path)
-            print('Extracting ngrok: ', ngrok_zip_path)
             zip_file = zipfile.ZipFile(ngrok_zip_path, 'r')
             zip_file.extractall(temp)
             zip_file.close()
-            os.chmod(ngrok_exe_path, 0o755)
 
-        return ngrok_exe_path
+            os.chmod(ngrok_path, 0o755)
+
+            if ngrok_path.is_file():
+                return ngrok_path
+            else:
+                # return None
+                # TODO else 
+                raise ValueError('It was not possible to get ngrok executable.')                
+
     except ValueError as err:
         print(err)
         sys.exit(1)
@@ -106,7 +133,7 @@ def get_stdout():
 
 def is_running():
     """
-    Returns ngrok process status
+    Returns True if ngrok process is running
     """
     global ngrok_process
     if ngrok_process is None:
@@ -121,7 +148,9 @@ def execute():
     global ngrok_process
 
     if is_running():
-        stop()
+        print('ngrok already running')
+        return
+
     filePath = get_ngrok()
     filePathStr = str(filePath)
     try:
@@ -138,6 +167,7 @@ def stop():
     if ngrok_process != None:
         ngrok_process.terminate()
         ngrok_process = None
+        print('sdasdasfdafdsaf')
 
 def get_info(full=False):
     try:
@@ -153,15 +183,14 @@ def get_info(full=False):
     except URLError as e:
         raise ValueError('An error has occurred while accessing ngrok local api: '+local_api, e.reason)
 
-execute()
-
-while True:
-    cmd = input()
-    if cmd == 'e':
-        stop()
-        break
-    if cmd == 'i': print(get_info())
-    if cmd == 'if': print(get_info(True))
-    if cmd == 'c': print(is_running())
-    if cmd == 's': print(get_stdout())
-
+# while True:
+#     cmd = input()
+#     if cmd == 'exit': 
+#         stop() 
+#         break
+#     if cmd == 'e': stop()
+#     if cmd == 'start': execute()
+#     if cmd == 'i': print(get_info())
+#     if cmd == 'if': print(get_info(True))
+#     if cmd == 'c': print(is_running())
+#     if cmd == 's': print(get_stdout())
