@@ -68,8 +68,8 @@ def report_hook(block_num, block_size, total_size):
             sys.stderr.write("\n")
     else:
         sys.stderr.write("read %d\n" % (read,))
-            
-def download_file(file_name):    
+
+def download_file(file_name):
     try:
         url = get_ngrok_url()
         print('Downloading ngrok... ', url)
@@ -78,7 +78,7 @@ def download_file(file_name):
         raise ValueError('An error has occurred while downloading ngrok:', e)
     except URLError as e:
         raise ValueError('An error has occurred while downloading ngrok:', e.reason)
-    
+
 def get_ngrok():
     """
     Returns ngrok executable path after download and extract ngrok to the temp directory
@@ -114,9 +114,8 @@ def get_ngrok():
             if ngrok_path.is_file():
                 return ngrok_path
             else:
-                # return None
                 # TODO else 
-                raise ValueError('It was not possible to get ngrok executable.')                
+                raise ValueError('It was not possible to get ngrok executable.')
 
     except ValueError as err:
         print(err)
@@ -167,7 +166,7 @@ def stop():
     if ngrok_process != None:
         ngrok_process.terminate()
         ngrok_process = None
-        print('sdasdasfdafdsaf')
+        print('ngrok stoped.')
 
 def get_info(full=False):
     try:
@@ -183,14 +182,3 @@ def get_info(full=False):
     except URLError as e:
         raise ValueError('An error has occurred while accessing ngrok local api: '+local_api, e.reason)
 
-# while True:
-#     cmd = input()
-#     if cmd == 'exit': 
-#         stop() 
-#         break
-#     if cmd == 'e': stop()
-#     if cmd == 'start': execute()
-#     if cmd == 'i': print(get_info())
-#     if cmd == 'if': print(get_info(True))
-#     if cmd == 'c': print(is_running())
-#     if cmd == 's': print(get_stdout())
