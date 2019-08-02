@@ -22,17 +22,5 @@ def test_get_platform():
 def test_execute():
     app.execute()
     assert app.is_running() == True
-    assert type(app.get_info()) == str
+#     assert type(app.get_info()) == str
     app.stop()
-
-# while True:
-#     cmd = input()
-#     if cmd == 'exit': 
-#         stop() 
-#         break
-#     if cmd == 'e': stop()
-#     if cmd == 'start': execute()
-#     if cmd == 'i': print(get_info())
-#     if cmd == 'if': print(get_info(True))
-#     if cmd == 'c': print(is_running())
-#     if cmd == 's': print(get_stdout())

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import os
+import re
 import sys
 import json
 import math
@@ -143,7 +144,7 @@ def is_running():
         else:
             return False
 
-def execute():
+def execute(args_text=''):
     global ngrok_process
 
     if is_running():
@@ -154,7 +155,14 @@ def execute():
     filePathStr = str(filePath)
     try:
         token = '--authtoken=asd'
-        args = [filePathStr, 'http', '3000']
+
+        if args_text == '':
+            args = ['http', '3000']
+        else:
+            args = split_text(args_text)       
+
+        args.insert(0, filePathStr)
+
         ngrok_process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print('ngrok Running...', args)
         # stdout, stderr = ngrok_process.communicate()
@@ -182,3 +190,26 @@ def get_info(full=False):
     except URLError as e:
         raise ValueError('An error has occurred while accessing ngrok local api: '+local_api, e.reason)
 
+def split_text(text):
+    if not isinstance(text, str):
+        raise TypeError('text is not a str.')
+
+    replaced_text = re.sub(r'[^0-9a-zA-Z\s]', '', text)
+    return replaced_text.split()
+
+# while True:
+#     cmd = input()
+#     cmd = split_text(cmd)
+#     args = []
+#     if len(cmd) < 1: break
+#     if cmd[0] == 'exit': 
+#         stop() 
+#         break
+#     if cmd[0] == 'stop': stop()
+#     if cmd[0] == 'start': execute('-h')
+#     if cmd[0] == 'getinfo': print(get_info())
+#     if cmd[0] == 'getfullinfo': print(get_info(True))
+#     if cmd[0] == 'isrunning': print(is_running())
+#     if cmd[0] == 'stdout': print(get_stdout())
+#     if cmd[0] == 'split': print(split_text('aaa sdd@#$@#$ $#/ ¨¨&*7*( 23cvfcv'))
+    

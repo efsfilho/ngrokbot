@@ -18,7 +18,8 @@ def eco(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text='eco123')
 
 def start(bot, update):
-    execute()
+    # execute(bot.)
+    # print(update.message.)
     bot.send_message(chat_id=update.message.chat_id, text='eco123')
 
 dispatcher.add_handler(CommandHandler('eco', eco))
