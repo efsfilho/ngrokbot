@@ -46,14 +46,16 @@ def status(bot, update):
     try:
         if ngrok.is_running():
             info = ngrok.get_info(True)
-            info = json.dumps(info, indent=2)
+            info = '```'+json.dumps(info, indent=2)+'```'
         else:
             info = 'Ngrok is not running, start it first with /start'
     except:
         # TODO except handle
         info = 'It was not possible to get ngrok info.'
 
-    bot.send_message(chat_id=update.message.chat_id, text=info)
+    bot.send_message(chat_id=update.message.chat_id,
+        text=info,
+        parse_mode=telegram.ParseMode.MARKDOWN)
 
 dispatcher.add_handler(CommandHandler('eco', eco))
 dispatcher.add_handler(CommandHandler('start', start))
