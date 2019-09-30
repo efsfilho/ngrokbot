@@ -9,5 +9,4 @@ jobs:
         command: |
           sudo pip install pipenv
           pipenv install
-      - run:
-        command: pytest -v
+      - run: pytest -v
