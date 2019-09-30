@@ -6,6 +6,5 @@ jobs:
     steps:
       - checkout
       - run:
-        command: |
-          sudo pip install pipenv
-          pipenv install
+        command: sudo pip install pipenv
+        command: pipenv install
