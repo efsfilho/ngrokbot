@@ -6,4 +6,3 @@ jobs:
     steps:
       - checkout
       - run: sudo pip install pipenv | pipenv install
-      - run: pytest -v
