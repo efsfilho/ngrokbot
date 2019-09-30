@@ -1,7 +1,7 @@
 import pytest
 import time
 
-from src.ngrok import app
+from src import app
 
 def check_keys(dictObj, key):
     __tracebackhide__ = True

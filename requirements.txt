@@ -1,1 +1,2 @@
+pytest==5.2.0
 python-telegram-bot==11.1.0
