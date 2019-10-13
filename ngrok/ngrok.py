@@ -59,9 +59,7 @@ class NgrokManager():
             if ngrok_path.is_file() and not force:
                 return ngrok_path
             else:
-
                 ngrok_zip_path = pathlib.Path(ngrok_instalation_path, 'ngrok.zip')
-
                 # downloads ngrok zip
                 download_file(ngrok_zip_path)
 
