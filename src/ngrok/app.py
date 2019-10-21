@@ -17,7 +17,7 @@ from urllib.error import URLError, HTTPError
 # stderr, stdout and pid of the running ngrok
 ngrok_process = None
 
-def get_platform():
+def get_platform( ):
     """
     Returns OS/Architecture
     """
@@ -35,7 +35,7 @@ def get_platform():
         raise ValueError('Platform not supported yet!')
     return os
 
-def get_ngrok_url():
+def get_ngrok_url( ):
     """
     Returns ngrok url to be download according to the running platform
     """
@@ -54,7 +54,7 @@ def get_ngrok_url():
         
     return url
 
-def report_hook(block_num, block_size, total_size):
+def report_hook(block_num,  block_size, total_size):
     """
     Write download progress
     """
@@ -70,7 +70,7 @@ def report_hook(block_num, block_size, total_size):
     else:
         sys.stderr.write("read %d\n" % (read,))
 
-def download_file(file_name):
+def download_file(file_name ):
     try:
         url = get_ngrok_url()
         print('Downloading ngrok... ', url)
@@ -80,9 +80,9 @@ def download_file(file_name):
     except URLError as e:
         raise ValueError('An error has occurred while downloading ngrok:', e.reason)
 
-def get_ngrok():
+def get_ngrok( ):
     """
-    Returns ngrok executable path after download and extract ngrok to the temp directory
+    Returns ngrok executable path
     """
 
     if get_platform()['os'] == 'Linux':
@@ -122,7 +122,7 @@ def get_ngrok():
         print(err)
         sys.exit(1)
 
-def get_stdout():
+def get_stdout( ):
     global ngrok_process
     msg = ''
     if not is_running():
@@ -131,7 +131,7 @@ def get_stdout():
             # print('', line.decode('utf-8'))
     return msg
 
-def is_running():
+def is_running() :
     """
     Returns True if ngrok process is running
     """
@@ -144,8 +144,8 @@ def is_running():
         else:
             return False
 
-def execute(args_text=''):
-    global ngrok_process
+def execute( args_text=''):
+    global ngrok _process
 
     if is_running():
         print('ngrok already running')
@@ -169,7 +169,7 @@ def execute(args_text=''):
     except ValueError as err:
         print(err)
 
-def stop():
+def stop( ):
     global ngrok_process
     if ngrok_process != None:
         ngrok_process.terminate()
@@ -190,26 +190,26 @@ def get_info(full=False):
     except URLError as e:
         raise ValueError('An error has occurred while accessing ngrok local api: '+local_api, e.reason)
 
-def split_text(text):
+def split_text(tex t):
     if not isinstance(text, str):
         raise TypeError('text is not a str.')
 
     replaced_text = re.sub(r'[^0-9a-zA-Z\s]', '', text)
     return replaced_text.split()
 
-# while True:
-#     cmd = input()
-#     cmd = split_text(cmd)
-#     args = []
-#     if len(cmd) < 1: break
-#     if cmd[0] == 'exit': 
-#         stop() 
-#         break
-#     if cmd[0] == 'stop': stop()
-#     if cmd[0] == 'start': execute('-h')
-#     if cmd[0] == 'getinfo': print(get_info())
-#     if cmd[0] == 'getfullinfo': print(get_info(True))
-#     if cmd[0] == 'isrunning': print(is_running())
-#     if cmd[0] == 'stdout': print(get_stdout())
-#     if cmd[0] == 'split': print(split_text('aaa sdd@#$@#$ $#/ ¨¨&*7*( 23cvfcv'))
+while True:
+    cmd = input()
+    cmd = split_text(cmd)
+    args = []
+    if len(cmd) < 1: break
+    if cmd[0] == 'exit': 
+        stop() 
+        break
+    if cmd[0] == 'stop': stop()
+    if cmd[0] == 'start': execute('-h')
+    if cmd[0] == 'getinfo': print(get_info())
+    if cmd[0] == 'getfullinfo': print(get_info(True))
+    if cmd[0] == 'isrunning': print(is_running())
+    if cmd[0] == 'stdout': print(get_stdout())
+    if cmd[0] == 'split': print(split_text('aaa sdd@#$@#$ $#/ ¨¨&*7*( 23cvfcv'))
     

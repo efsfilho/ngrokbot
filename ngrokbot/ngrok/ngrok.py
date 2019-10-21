@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 import os
 import json
 import pathlib
@@ -37,7 +35,6 @@ class NgrokManager():
             file_name = 'ngrok'
         else:
             file_name = 'ngrok.exe'
-        print('Platform.............:',platform['os'], platform['arch'])
 
         try:
             if path is None:
@@ -62,6 +59,7 @@ class NgrokManager():
 
                 ngrok_zip_path = pathlib.Path(ngrok_instalation_path, 'ngrok.zip')
 
+                print('Platform.............:',platform['os'], platform['arch'])
                 # downloads ngrok zip
                 download_file(ngrok_zip_path)
 
@@ -93,14 +91,23 @@ class NgrokManager():
             else:
                 return False
 
+    def started(self):
+        return self.__is_ngrok_running()
+
     def get_ngrok(self):
+        """
+        Returns true if ngrok is installed
+        """
         print('NgrokManager starting...')
         self.__ngrok_executable = self.__install_ngrok()
 
         if self.__ngrok_executable != None:
             print(f'Ngrok executable.....: {self.__ngrok_executable}\n')
+            return True
+        else:
+            return False
 
-    def start(self, args_list=None):
+    def start(self, arg_list=None):
         if self.__is_ngrok_running():
             print('ngrok is already running!')
             return
@@ -113,32 +120,31 @@ class NgrokManager():
 
         try:
             token = '--authtoken=asd'
-
-            if args_list == None:
-                args = ['http', '3000']
+            print(len(arg_list))
+            if arg_list == None or len(arg_list) < 2 :
+                args = ['tcp', '22']
             else:
-                args = args_list
+                args = arg_list
             args.insert(0, self.__ngrok_executable)
 
             self.__ngrok_process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
             args.remove(args[0])
             args_str = ' '.join(args)
             print(f'running {self.__ngrok_executable} {args_str}')
             print(f'PID {self.__ngrok_process.pid} ')
-
-        except Exception as error:
-            print('Error: ', error)
+        except Exception as exception:
+            print(f'Error: {exception}')
 
     def stop(self):
         if self.__is_ngrok_running():
             self.__ngrok_process.terminate()
             self.__ngrok_process = None
+        self.__started = False
         print('ngrok stoped')
 
     def get_stdout(self):
         msg = ''
-        if not self.__is_ngrok_running():
+        if self.__is_ngrok_running():
             for line in self.__ngrok_process.stdout:
                 msg += line.decode('utf-8')
         return msg
@@ -154,7 +160,7 @@ class NgrokManager():
                 else:
                     return api['tunnels'][0]['public_url']
             else:
-                return 'ngrok is not running'
+                raise Exception('ngrok is not running')
         except HTTPError as e:
             raise ValueError('An error has occurred while accessing ngrok local api: '+local_api, e)
         except URLError as e:

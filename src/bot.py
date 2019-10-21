@@ -11,7 +11,7 @@ from telegram.ext import Updater
 from ngrok import app as ngrok
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-token = os.environ['b1']
+token = os.environ['BOT1']
 
 updater = Updater(token=token)
 dispatcher = updater.dispatcher
