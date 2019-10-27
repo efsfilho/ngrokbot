@@ -1,10 +1,13 @@
 import os
 import json
+import time
 import pathlib
 import zipfile
 import tempfile
 import subprocess
 from .util import *
+
+logger = logging.getLogger(__name__)
 
 class NgrokManager():
 
@@ -30,13 +33,14 @@ class NgrokManager():
             ngrok executable path or None if something went wrong
 
         """
-        platform = get_platform()
-        if platform['os'] == 'Linux':
-            file_name = 'ngrok'
-        else:
-            file_name = 'ngrok.exe'
 
         try:
+            platform = get_platform()
+            if platform['os'] == 'Linux':
+                file_name = 'ngrok'
+            else:
+                file_name = 'ngrok.exe'
+
             if path is None:
                 temp = pathlib.Path(tempfile.gettempdir(),'ngrok')
 
@@ -76,8 +80,8 @@ class NgrokManager():
                 else:
                     return None
 
-        except ValueError as error:
-            print('Error: ', error)
+        except ValueError as valueError:
+            logger.error(valueError)
 
     def __is_ngrok_running(self):
         """
@@ -109,59 +113,84 @@ class NgrokManager():
 
     def start(self, arg_list=None):
         if self.__is_ngrok_running():
-            print('ngrok is already running!')
             return
 
-        if self.__ngrok_executable == None:
-            self.__ngrok_executable = self.__install_ngrok()
-            if self.__ngrok_executable == None:
-                # TODO download erros handling
-                return
-
         try:
+            if self.__ngrok_executable is None:
+                self.__ngrok_executable = self.__install_ngrok()
+                if self.__ngrok_executable is None:
+                    raise Exception('It was not possible to get ngrok executable path')
+
             token = '--authtoken=asd'
-            print(len(arg_list))
-            if arg_list == None or len(arg_list) < 2 :
-                args = ['tcp', '22']
+
+            if arg_list is None or len(arg_list) < 2 :
+                # args = ['tcp', '22']
+                args = []
             else:
                 args = arg_list
             args.insert(0, self.__ngrok_executable)
 
             self.__ngrok_process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            args.remove(args[0])
-            args_str = ' '.join(args)
-            print(f'running {self.__ngrok_executable} {args_str}')
-            print(f'PID {self.__ngrok_process.pid} ')
+
+            time.sleep(2) # wait ngrok digest
+
+            if self.__ngrok_process.poll() is None:
+                args.remove(args[0])
+                args_str = ' '.join(args)
+                logger.info(f'PID: {self.__ngrok_process.pid} COMMAND {self.__ngrok_executable} {args_str}')
+                url = self.get_info()
+                logger.info(f'URL: {url}')
+                return url
+            else:
+                msg = ''
+                for line in self.__ngrok_process.stdout:
+                    msg += line.decode('utf-8')
+                return msg
+
         except Exception as exception:
-            print(f'Error: {exception}')
+            logger.error(exception)
+            return 'It was not possible to execute ngrok'
 
     def stop(self):
+        msg = ''
         if self.__is_ngrok_running():
             self.__ngrok_process.terminate()
             self.__ngrok_process = None
+            if not self.__is_ngrok_running():
+                msg = 'ngrok stoped'
+            else:
+                # TODO force to kill it
+                msg = 'It was not possible to stop ngrok'
         self.__started = False
-        print('ngrok stoped')
+        return msg
 
     def get_stdout(self):
         msg = ''
-        if self.__is_ngrok_running():
+        if isinstance(self.__ngrok_process, subprocess.Popen):
+            # if self.__ngrok_process.poll() is None:
+            #     msg = self.__ngrok_process.communicate()[0]
             for line in self.__ngrok_process.stdout:
                 msg += line.decode('utf-8')
         return msg
 
     def get_info(self, full=False):
+        msg = ''
         try:
             if self.__is_ngrok_running():
                 local_api = 'http://127.0.0.1:4040/api/tunnels'
                 res = urllib.request.urlopen(local_api).read()
                 api = json.loads(res.decode('utf-8'))
                 if full:
-                    return api['tunnels'][0]
+                    msg = api['tunnels'][0]
                 else:
-                    return api['tunnels'][0]['public_url']
+                    msg = api['tunnels'][0]['public_url']
             else:
-                raise Exception('ngrok is not running')
-        except HTTPError as e:
-            raise ValueError('An error has occurred while accessing ngrok local api: '+local_api, e)
-        except URLError as e:
-            raise ValueError('An error has occurred while accessing ngrok local api: '+local_api, e.reason)
+                msg = 'ngrok is not running'
+        except HTTPError as exception:
+            logger.error(f'An error has occurred while accessing ngrok local api: {local_api} {exception}')
+            msg = 'It was not possible to get any info from ngrok'
+        except URLError as exception:
+            logger.error(f'An error has occurred while accessing ngrok local api: {local_api} {exception.reason}')
+            msg = 'It was not possible to get any info from ngrok'
+        finally:
+            return msg
