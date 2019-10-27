@@ -6,71 +6,54 @@ import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 # Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-logger = logging.getLogger(__name__)
+logging.basicConfig(filename='./log/log.log', filemode='a',
+                    format='%(asctime)s - %(levelname)s - %(filename)s > %(funcName)s: %(message)s', level=logging.INFO)
 
 ngrok = NgrokManager()
 
 def start(update, context):
-    text = update.message.text
-    text = re.sub(r'\/ngrok','', text)
     msg = ' '
-    if ngrok.started():
-        msg = 'Ngrok already Runnning.'
-    else:
-        try:
-            # if len(text) > 1:
+    try:
+        text = update.message.text
+        text = re.sub(r'\/ngrok','', text)
+        if ngrok.started():
+            msg = 'ngrok is already runnning'
+        else:
             text = text[1:]
             args = text.split(' ')
-            ngrok.start(args)
-            if ngrok.started():
-                msg = 'ngrok started'
-                # TODO better msg return
-        except Exception as exception:
-            logger.error(f'start(): {exception}')
-            msg = 'It was not possible to start ngrok.'
+            msg = f'```{ngrok.start(args)}```'
+    except Exception as exception:
+        logger.error(exception)
+        msg = 'It was not possible to start ngrok'
+    finally:
+        update.message.reply_text(msg, parse_mode=telegram.ParseMode.MARKDOWN)
 
-    # bot.send_message(chat_id=update.message.chat_id, text=msg)
-    update.message.reply_text(msg)
-
-
-def status(update, context):
+def info(update, context, full=True):
     if ngrok.started():
         try:
             info = ''
-            info = ngrok.get_info(True)
+            info = ngrok.get_info(full)
             info = f'```{json.dumps(info, indent=2)}```'
             update.message.reply_text(info, parse_mode=telegram.ParseMode.MARKDOWN)
         except Exception as exception:
-            logger.error(f'status(): {exception}')
+            logger.error(exception)
             update.message.reply_text('It was not possible to get ngrok info.')
     else:
-        update.message.reply_text('Ngrok is not running, start it first with /ngrok')
+        update.message.reply_text('ngrok is not running, start it first with /ngrok')
 
 def url(update, context):
-    if ngrok.started():
-        try:
-            info = ''
-            info = f'```{ngrok.get_info()}```'
-            update.message.reply_text(info, parse_mode=telegram.ParseMode.MARKDOWN)
-        except Exception as exception:
-            logger.error(f'status(): {exception}')
-            update.message.reply_text('It was not possible to get ngrok info.')
-    else:
-        update.message.reply_text('Ngrok is not running, start it first with /ngrok')
+    info(update, context, False)
 
 def stop(update, context):
     ngrok.stop()
     update.message.reply_text('signal to stop sent')
     
 def echo(update, context):
-    """Echo the user message."""
-    update.message.reply_text(update.message.text)
+    update.message.reply_text('echo')
 
 
 def error(update, context):
     """Log Errors caused by Updates."""
-    # logger.warning('Update "%s" caused error "%s"', update, context.error)
     logger.warning('Error "%s"', context.error)
 
 def run(token=None):
@@ -79,9 +62,10 @@ def run(token=None):
     disp = updater.dispatcher
 
     disp.add_handler(CommandHandler('ngrok', start))
-    disp.add_handler(CommandHandler('status', status))
+    disp.add_handler(CommandHandler('info', info))
     disp.add_handler(CommandHandler('url', url))
     disp.add_handler(CommandHandler('stop', stop))
+    disp.add_handler(CommandHandler('echo', echo))
     disp.add_handler(MessageHandler(Filters.text, echo))
 
     disp.add_error_handler(error)
