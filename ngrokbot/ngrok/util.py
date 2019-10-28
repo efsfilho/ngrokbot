@@ -33,7 +33,6 @@ def get_ngrok_url():
             url = 'https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip'
         else:
             url = 'https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-386.zip'
-        
     return url
 
 def report_hook(block_num, block_size, total_size):

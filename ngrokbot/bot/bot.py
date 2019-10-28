@@ -1,13 +1,11 @@
 import re
 import json
 import logging
-from ngrok import NgrokManager
 import telegram
+from ngrok import NgrokManager
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-# Enable logging
-logging.basicConfig(filename='./log/log.log', filemode='a',
-                    format='%(asctime)s - %(levelname)s - %(filename)s > %(funcName)s: %(message)s', level=logging.INFO)
+logger = logging.getLogger()
 
 ngrok = NgrokManager()
 
@@ -49,7 +47,7 @@ def stop(update, context):
     update.message.reply_text('signal to stop sent')
     
 def echo(update, context):
-    update.message.reply_text('echo')
+    update.message.reply_text(f'echo {update.message.text}')
 
 
 def error(update, context):
@@ -71,3 +69,4 @@ def run(token=None):
     disp.add_error_handler(error)
     updater.start_polling()
     updater.idle()
+    logger.info('Bot started')

@@ -1,13 +1,14 @@
 import os
 import json
 import time
+import logging
 import pathlib
 import zipfile
 import tempfile
 import subprocess
 from .util import *
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 class NgrokManager():
 
@@ -76,7 +77,10 @@ class NgrokManager():
                 os.chmod(ngrok_path, 0o755)
 
                 if ngrok_path.is_file():
-                    return ngrok_path
+                    if platform['os'] == 'Windows':
+                        return str(ngrok_path)
+                    else:
+                        return ngrok_path
                 else:
                     return None
 
@@ -112,44 +116,44 @@ class NgrokManager():
             return False
 
     def start(self, arg_list=None):
-        if self.__is_ngrok_running():
-            return
-
-        try:
-            if self.__ngrok_executable is None:
-                self.__ngrok_executable = self.__install_ngrok()
+        if not self.__is_ngrok_running():
+            msg = ''
+            try:
                 if self.__ngrok_executable is None:
-                    raise Exception('It was not possible to get ngrok executable path')
+                    self.__ngrok_executable = self.__install_ngrok()
+                    if self.__ngrok_executable is None:
+                        raise Exception('It was not possible to get ngrok executable path')
 
-            token = '--authtoken=asd'
+                token = '--authtoken=asd'
 
-            if arg_list is None or len(arg_list) < 2 :
-                # args = ['tcp', '22']
-                args = []
-            else:
-                args = arg_list
-            args.insert(0, self.__ngrok_executable)
+                if arg_list is None or len(arg_list) < 2 :
+                    # args = ['tcp', '22']
+                    args = []
+                else:
+                    args = arg_list
+                
+                args.insert(0, self.__ngrok_executable)
 
-            self.__ngrok_process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                self.__ngrok_process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-            time.sleep(2) # wait ngrok digest
+                time.sleep(2) # wait ngrok digest
 
-            if self.__ngrok_process.poll() is None:
-                args.remove(args[0])
-                args_str = ' '.join(args)
-                logger.info(f'PID: {self.__ngrok_process.pid} COMMAND {self.__ngrok_executable} {args_str}')
-                url = self.get_info()
-                logger.info(f'URL: {url}')
-                return url
-            else:
-                msg = ''
-                for line in self.__ngrok_process.stdout:
-                    msg += line.decode('utf-8')
+                if self.__ngrok_process.poll() is None:
+                    args.remove(args[0])
+                    args_str = ' '.join(args)
+                    logger.info(f'PID: {self.__ngrok_process.pid} COMMAND {self.__ngrok_executable} {args_str}')
+                    url = self.get_info()
+                    logger.info(f'URL: {url}')
+                    msg = url
+                else:
+                    for line in self.__ngrok_process.stdout:
+                        msg += line.decode('utf-8')
+
+            except Exception as exception:
+                logger.error(exception)
+                msg = 'It was not possible to execute ngrok'
+            finally:
                 return msg
-
-        except Exception as exception:
-            logger.error(exception)
-            return 'It was not possible to execute ngrok'
 
     def stop(self):
         msg = ''
