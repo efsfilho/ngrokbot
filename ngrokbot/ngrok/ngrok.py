@@ -106,7 +106,7 @@ class NgrokManager():
         """
         Returns true if ngrok is installed
         """
-        print('NgrokManager starting...')
+        print('NgrokManager started')
         self.__ngrok_executable = self.__install_ngrok()
 
         if self.__ngrok_executable != None:
