@@ -1,0 +1,8 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.6.8
+    steps:
+      - checkout
+      - run: sudo pip install pipenv | pipenv install
