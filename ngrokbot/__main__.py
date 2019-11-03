@@ -18,6 +18,7 @@ handler = logging.FileHandler(log_file)
 handler.setFormatter(formatter)
 
 logging.getLogger().addHandler(handler)
+logging.root.setLevel(logging.INFO)
 
 if __name__ == '__main__':
     token = os.environ['BOT1']

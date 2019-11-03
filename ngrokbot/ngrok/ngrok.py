@@ -67,7 +67,7 @@ class NgrokManager():
 
                 # downloads ngrok zip
                 download_file(ngrok_zip_path)
-
+                
                 print(f'Extracting ngrok from: {ngrok_zip_path}')
 
                 zip_file = zipfile.ZipFile(ngrok_zip_path, 'r')
@@ -106,14 +106,16 @@ class NgrokManager():
         """
         Returns true if ngrok is installed
         """
-        print('NgrokManager started')
         self.__ngrok_executable = self.__install_ngrok()
 
         if self.__ngrok_executable != None:
             print(f'Ngrok executable.....: {self.__ngrok_executable}\n')
+            logger.info(f'NgrokManager started')
+            logger.info(f'ngrok: {self.__ngrok_executable}')
             return True
         else:
             return False
+
 
     def start(self, arg_list=None):
         if not self.__is_ngrok_running():
