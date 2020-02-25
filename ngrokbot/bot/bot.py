@@ -15,13 +15,17 @@ ngrok = NgrokManager()
 
 env_path = Path('.')/'.env'
 load_dotenv(dotenv_path=env_path)
-user_list = []
+
+user_id_list = []
+username_list = []
 
 def restricted(func):
     @wraps(func)
     def wrapped(update, context, *args, **kwargs):
         user = update.effective_user
-        if user.id not in user_list:
+        is_id_allow = user.id in user_list:
+        is_user_allow = user.username in user_list:
+        if not is_id_allow or not is_user_allow
             logging.info('Unauthorized access denied for User:{}.'.format(user))
             return
         return func(update, context, *args, **kwargs)
